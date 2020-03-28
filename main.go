@@ -99,7 +99,7 @@ func saveRailJourney(railJourney RailJourney) {
 	db := getDBConnection()
 	defer closeDBConnection(db)
 
-	// https://stackoverflow.com/a/16058741
+	// Inserting records into database https://stackoverflow.com/a/16058741
 	stmt, err := db.Prepare("INSERT rail_journeys SET journey_type=?, departing=?, destination=?, ticket_name=?, date=?, railcard_used=?, cost=?, total_cost=?")
 	if err != nil {
 		log.Printf("Error creating INSERT statment")
@@ -115,8 +115,6 @@ func saveRailJourney(railJourney RailJourney) {
 	}
 
 	log.Printf("Record inserted into Database")
-
-	return
 }
 
 func RailJourneysHandler(w http.ResponseWriter, r *http.Request) {
