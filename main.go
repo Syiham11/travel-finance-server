@@ -20,15 +20,15 @@ import (
 // https://www.thepolyglotdeveloper.com/2017/04/using-sqlite-database-golang-application/
 
 type RailJourney struct {
-	Id           int       `json:"id"`
-	JourneyType  string    `json:"journey_type"`
-	Departing    string    `json:"departing"`
-	Destination  string    `json:"destination"`
-	TicketName   string    `json:"ticket_name"`
-	Date         time.Time `json:"date"`
-	RailcardUsed bool      `json:"railcard_used"`
-	Cost         float64   `json:"cost"`
-	TotalCost    float64   `json:"total_cost"`
+	Id           int            `json:"id"`
+	JourneyType  string         `json:"journey_type"`
+	Departing    string         `json:"departing"`
+	Destination  sql.NullString `json:"destination"`
+	TicketName   sql.NullString `json:"ticket_name"`
+	Date         time.Time      `json:"date"`
+	RailcardUsed bool           `json:"railcard_used"`
+	Cost         float64        `json:"cost"`
+	TotalCost    float64        `json:"total_cost"`
 }
 
 func getDBConnection() *sql.DB {
@@ -44,15 +44,23 @@ func getDBConnection() *sql.DB {
 	db, err := sql.Open("mysql", dbConnectionString)
 
 	if err != nil {
-		fmt.Printf("Error  Connecting to DB")
+		fmt.Printf("Error  Connecting to Database")
 		fmt.Printf("%s", err)
 	}
 	return db
 }
 
+func closeDBConnection(db *sql.DB) {
+	err := db.Close()
+	if err != nil {
+		fmt.Printf("Error closing connection to Database")
+		fmt.Printf("%s", err)
+	}
+}
+
 func getRailJourneys() (railJourneys []RailJourney) {
 	db := getDBConnection()
-	defer db.Close()
+	defer closeDBConnection(db)
 
 	results, err := db.Query("SELECT * FROM rail_journeys")
 
@@ -77,7 +85,7 @@ func getRailJourneys() (railJourneys []RailJourney) {
 		)
 
 		if err != nil {
-			log.Printf("Error Processing DB results")
+			log.Printf("Error Processing Database results")
 			fmt.Printf("%s", err)
 			return
 		}
@@ -87,14 +95,56 @@ func getRailJourneys() (railJourneys []RailJourney) {
 	return
 }
 
+func saveRailJourney(railJourney RailJourney) {
+	db := getDBConnection()
+	defer closeDBConnection(db)
+
+	// https://stackoverflow.com/a/16058741
+	stmt, err := db.Prepare("INSERT rail_journeys SET journey_type=?, departing=?, destination=?, ticket_name=?, date=?, railcard_used=?, cost=?, total_cost=?")
+	if err != nil {
+		log.Printf("Error creating INSERT statment")
+		fmt.Printf("%s", err)
+		return
+	}
+
+	_, err = stmt.Exec(railJourney.JourneyType, railJourney.Departing, railJourney.Destination, railJourney.TicketName, railJourney.Date, railJourney.RailcardUsed, railJourney.Cost, railJourney.TotalCost)
+	if err != nil {
+		log.Printf("Error inserting into Database")
+		fmt.Printf("%s", err)
+		return
+	}
+
+	log.Printf("Record inserted into Database")
+
+	return
+}
+
 func RailJourneysHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("RailJourneysHandler called for %v", r.RequestURI)
+	log.Printf("RailJourneysHandler called, Method %v", r.Method)
 
-	railJourneys := getRailJourneys()
+	method := r.Method
+	if method == "POST" {
+		// Decode JSON https://stackoverflow.com/a/15685432
 
-	log.Printf("Database retured %v railJourney record(s)", len(railJourneys))
+		decoder := json.NewDecoder(r.Body)
+		var railJourney RailJourney
+		err := decoder.Decode(&railJourney)
 
-	json.NewEncoder(w).Encode(railJourneys)
+		if err != nil {
+			log.Printf("Failed to decode JSON, %v", err)
+		}
+
+		saveRailJourney(railJourney)
+	} else {
+		railJourneys := getRailJourneys()
+
+		log.Printf("Database retured %v railJourney record(s)", len(railJourneys))
+
+		err := json.NewEncoder(w).Encode(railJourneys)
+		if err != nil {
+			log.Printf("Failed to encode JSON, %v", err)
+		}
+	}
 }
 
 func main() {
