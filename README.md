@@ -1,3 +1,5 @@
+[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/matthewandrewpalmer/travel-finance-server) 
+
 # Travel Finance Server
 
 This is a simple Go application that connects to a MySQL Database, to handle requests for the  [React frontend](https://github.com/matthewandrewpalmer/travel-finance-website)
