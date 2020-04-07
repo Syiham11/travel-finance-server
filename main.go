@@ -133,6 +133,11 @@ func RailJourneysHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		saveRailJourney(railJourney)
+
+		json.NewEncoder(w).Encode("{success: true}")
+		if err != nil {
+			log.Printf("Failed to encode JSON, %v", err)
+		}
 	} else {
 		railJourneys := getRailJourneys()
 
