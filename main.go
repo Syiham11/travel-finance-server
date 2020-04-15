@@ -134,7 +134,8 @@ func RailJourneysHandler(w http.ResponseWriter, r *http.Request) {
 
 		saveRailJourney(railJourney)
 
-		json.NewEncoder(w).Encode("{success: true}")
+		// https://stackoverflow.com/questions/50451865/returning-a-simple-json-response
+		json.NewEncoder(w).Encode(map[string]string{"status": "OK"})
 		if err != nil {
 			log.Printf("Failed to encode JSON, %v", err)
 		}
